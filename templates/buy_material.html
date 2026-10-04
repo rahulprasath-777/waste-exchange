@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Buy Material - Industrial Waste Exchange{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 600px; margin: 40px auto;">
+        <h2>Purchase Waste Material</h2>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">{{ material.name }}</h3>
+            <table style="width: 100%; border: none;">
+                <tr>
+                    <td><strong>Available Quantity:</strong></td>
+                    <td>{{ material.quantity }} {{ material.unit }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Price per Unit:</strong></td>
+                    <td><span class="price-highlight">₹{{ "%.2f"|format(material.price_per_unit) }}</span></td>
+                </tr>
+                {% if material.description %}
+                <tr>
+                    <td><strong>Description:</strong></td>
+                    <td>{{ material.description }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label for="quantity">Quantity to Purchase *</label>
+                <input type="number" id="quantity" name="quantity" step="0.01" min="0.01" max="{{ material.quantity }}" placeholder="Enter quantity" required>
+                <small style="color: #7f8c8d;">Maximum available: {{ material.quantity }} {{ material.unit }}</small>
+            </div>
+            
+            <div class="card" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
+                <h4 style="margin-top: 0;">Order Summary</h4>
+                <table style="width: 100%; border: none; background: transparent;">
+                    <tr>
+                        <td><strong>Quantity:</strong></td>
+                        <td id="summary_qty">-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Price per Unit:</strong></td>
+                        <td>₹{{ "%.2f"|format(material.price_per_unit) }}</td>
+                    </tr>
+                    <tr style="border-top: 2px solid #dee2e6;">
+                        <td><strong>Total Amount:</strong></td>
+                        <td style="font-size: 18px;"><strong>₹<span id="summary_total">0.00</span></strong></td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px;">
+                <button type="submit" class="btn btn-success" style="width: 100%;">Place Order</button>
+                <a href="{{ url_for('materials_list') }}" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const quantityInput = document.getElementById('quantity');
+    const summaryQty = document.getElementById('summary_qty');
+    const summaryTotal = document.getElementById('summary_total');
+    
+    function updateSummary() {
+        const qty = parseFloat(quantityInput.value) || 0;
+        summaryQty.textContent = qty + ' {{ material.unit }}';
+        const total = qty * pricePerUnit;
+        summaryTotal.textContent = total.toFixed(2);
+    }
+    
+    quantityInput.addEventListener('input', updateSummary);
+    quantityInput.addEventListener('change', updateSummary);
+</script>
+{% endblock %}
+<label>Category</label>
+<input type="text" name="category" required>

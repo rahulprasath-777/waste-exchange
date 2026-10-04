@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}My Inventory - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--slate-900);">
+            🏷️ My Listed Materials
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Manage, update, or remove your published waste inventory</p>
+    </div>
+    <a href="{{ url_for('upload_material') }}" class="btn btn-success">+ List New Material</a>
+</div>
+
+{% if materials %}
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 90px;">Photo</th>
+                    <th>Material & Specs</th>
+                    <th>Category</th>
+                    <th>Unit Rate</th>
+                    <th>Available Stock</th>
+                    <th>Lot Value</th>
+                    <th>Published</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for material in materials %}
+                    <tr>
+                        <td>
+                            {% if material.image_filename %}
+                                <img src="{{ url_for('static', filename='uploads/materials/' + material.image_filename) }}" alt="{{ material.name }}" style="width: 70px; height: 70px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--slate-200);">
+                            {% else %}
+                                <div style="width: 70px; height: 70px; background-color: var(--slate-100); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.75rem; border: 1px solid var(--slate-200);">
+                                    📦
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong style="font-size: 1rem; color: var(--slate-900);">{{ material.name }}</strong>
+                            {% if material.description %}
+                                <div style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.2rem;">
+                                    {{ material.description[:55] }}{% if material.description|length > 55 %}...{% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge badge-success">{{ material.category }}</span></td>
+                        <td><strong style="color: var(--primary);">₹{{ "%.2f"|format(material.price_per_unit) }}</strong> / {{ material.unit }}</td>
+                        <td><strong style="color: var(--slate-800);">{{ material.quantity }}</strong> {{ material.unit }}</td>
+                        <td><strong style="color: var(--slate-900);">₹{{ "%.2f"|format(material.price_per_unit * material.quantity) }}</strong></td>
+                        <td><span style="font-size: 0.85rem; color: var(--text-muted);">{{ material.created_at.split()[0] if material.created_at else '' }}</span></td>
+                        <td style="text-align: right;">
+                            <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
+                                <a href="{{ url_for('view_material', material_id=material.id) }}" class="btn btn-secondary" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                                    View
+                                </a>
+                                <a href="{{ url_for('edit_material', material_id=material.id) }}" class="btn btn-gold" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                                    Edit
+                                </a>
+                                <a href="{{ url_for('delete_material', material_id=material.id) }}" class="btn btn-danger" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" onclick="return confirm('Permanently delete this material listing?')">
+                                    Delete
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">📦</span>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.5rem;">Your inventory is empty</h3>
+        <p style="margin-bottom: 1.5rem;">Start selling by creating your first waste material listing.</p>
+        <a href="{{ url_for('upload_material') }}" class="btn btn-success">+ Upload Waste Material</a>
+    </div>
+{% endif %}
+{% endblock %}

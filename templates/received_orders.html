@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Received Orders - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--slate-900);">
+        📬 Received Buyer Orders
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Incoming procurement requests for materials you have listed</p>
+</div>
+
+{% if orders %}
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ref</th>
+                    <th>Material</th>
+                    <th>Buyer Company</th>
+                    <th>Contact</th>
+                    <th>Quantity</th>
+                    <th>Total Value</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td><strong>#{{ order.id }}</strong></td>
+                        <td>
+                            <a href="{{ url_for('view_material', material_id=order.material_id) }}" style="color: var(--primary); font-weight: 700; text-decoration: none;">
+                                {{ order.name }}
+                            </a>
+                        </td>
+                        <td><strong>{{ order.company_name }}</strong></td>
+                        <td><span style="color: var(--text-muted); font-size: 0.85rem;">@{{ order.username }}</span></td>
+                        <td><strong>{{ order.quantity }}</strong></td>
+                        <td><strong style="color: var(--primary-hover); font-size: 1rem;">₹{{ "%.2f"|format(order.total_price) }}</strong></td>
+                        <td>
+                            {% if order.status == 'pending' %}
+                                <span class="badge badge-pending">⏳ Pending Review</span>
+                            {% elif order.status == 'approved' %}
+                                <span class="badge badge-approved">✓ In Progress</span>
+                            {% elif order.status == 'rejected' %}
+                                <span class="badge badge-rejected">✗ Rejected</span>
+                            {% elif order.status == 'completed' %}
+                                <span class="badge badge-completed">✓ Completed</span>
+                            {% endif %}
+                        </td>
+                        <td><span style="font-size: 0.85rem; color: var(--text-muted);">{{ order.created_at.split()[0] if order.created_at else '' }}</span></td>
+                        <td style="text-align: right;">
+                            <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
+                                {% if order.status == 'pending' %}
+                                    <a href="{{ url_for('update_order_status', order_id=order.id, status='approved') }}" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                                        ✓ Accept
+                                    </a>
+                                    <a href="{{ url_for('update_order_status', order_id=order.id, status='rejected') }}" class="btn btn-danger" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                                        Reject
+                                    </a>
+                                {% elif order.status == 'approved' %}
+                                    <a href="{{ url_for('update_order_status', order_id=order.id, status='completed') }}" class="btn btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                                        Mark Fulfilled
+                                    </a>
+                                {% else %}
+                                    <span style="color: var(--text-muted); font-size: 0.85rem;">Closed</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">📋</span>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.5rem;">No incoming orders yet</h3>
+        <p style="margin-bottom: 1.5rem;">Make sure your listings have high-quality photos and accurate pricing to attract buyers.</p>
+        <a href="{{ url_for('upload_material') }}" class="btn btn-success">+ List More Materials</a>
+    </div>
+{% endif %}
+{% endblock %}

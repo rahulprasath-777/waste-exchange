@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}{{ material.name }} - Waste Exchange Platform{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 2rem auto;">
+    <div class="card">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            
+            <!-- IMAGE GALLERY SECTION (Amazon/Flipkart Style) -->
+            <div style="background: #f9f9f9; padding: 1rem; border-radius: 4px;">
+                
+                {% if images %}
+                    <!-- Main Image Display -->
+                    <div id="mainImageContainer" style="
+                        position: relative;
+                        background: white;
+                        border-radius: 4px;
+                        overflow: hidden;
+                        margin-bottom: 1rem;
+                        aspect-ratio: 1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">
+                        <img id="mainImage" src="{{ images[0].image_url }}" alt="{{ material.name }}" style="
+                            max-width: 100%;
+                            max-height: 100%;
+                            object-fit: contain;
+                            transition: transform 0.3s;
+                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    </div>
+                    
+                    <!-- Thumbnail Gallery -->
+                    {% if images|length > 1 %}
+                        <div style="
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+                            gap: 0.5rem;
+                        ">
+                            {% for image in images %}
+                                <div style="
+                                    cursor: pointer;
+                                    border: 2px solid #ddd;
+                                    border-radius: 4px;
+                                    overflow: hidden;
+                                    aspect-ratio: 1;
+                                    background: white;
+                                    transition: border-color 0.3s;
+                                " class="thumbnail" onclick="changeMainImage('{{ image.image_url }}', this)">
+                                    <img src="{{ image.image_url }}" alt="Thumbnail" style="
+                                        width: 100%;
+                                        height: 100%;
+                                        object-fit: cover;
+                                    ">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Image Counter -->
+                    <p style="text-align: center; color: #7f8c8d; font-size: 0.9rem; margin-top: 1rem;">
+                        📷 {{ images|length }} image{% if images|length != 1 %}s{% endif %} available
+                    </p>
+                    
+                {% else %}
+                    <!-- No Image -->
+                    <div style="
+                        background: white;
+                        border-radius: 4px;
+                        padding: 3rem 1rem;
+                        text-align: center;
+                        aspect-ratio: 1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">
+                        <div>
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+                            <p style="color: #7f8c8d; margin: 0;">No photos available</p>
+                            <p style="color: #95a5a6; font-size: 0.9rem; margin: 0.5rem 0 0 0;">
+                                Seller hasn't uploaded images yet
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- PRODUCT DETAILS SECTION -->
+            <div>
+                <div class="card-header">
+                    <div class="card-title">{{ material.name }}</div>
+                </div>
+                
+                <!-- Category Badge -->
+                <div style="margin-bottom: 1rem;">
+                    <span style="
+                        background: #e8f4f8;
+                        color: #2c3e50;
+                        padding: 0.5rem 1rem;
+                        border-radius: 20px;
+                        font-weight: bold;
+                        font-size: 0.9rem;
+                    ">
+                        🏷️ {{ material.category }}
+                    </span>
+                </div>
+                
+                <!-- Company Info -->
+                <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f0f0f0; border-radius: 4px;">
+                    <p style="margin: 0; color: #7f8c8d;">
+                        <strong>Seller:</strong> 
+                        <a href="{{ url_for('profile', user_id=material.user_id) }}" style="color: #3498db; text-decoration: none;">
+                            {{ material.company_name }}
+                        </a>
+                    </p>
+                </div>
+                
+                <!-- Description -->
+                {% if material.description %}
+                    <div style="margin-bottom: 1.5rem;">
+                        <h3 style="color: #2c3e50; margin-bottom: 0.5rem;">Description</h3>
+                        <p style="color: #555; line-height: 1.6;">{{ material.description }}</p>
+                    </div>
+                {% endif %}
+                
+                <!-- Pricing & Availability -->
+                <div style="
+                    background: #f9f9f9;
+                    padding: 1.5rem;
+                    border-radius: 4px;
+                    margin-bottom: 1.5rem;
+                    border-left: 4px solid #27ae60;
+                ">
+                    <table style="background: none; box-shadow: none; width: 100%;">
+                        <tr>
+                            <td style="border: none; padding: 0.5rem 0;">
+                                <strong>Price per Unit:</strong>
+                            </td>
+                            <td style="border: none; padding: 0.5rem 0; text-align: right;">
+                                <span style="font-size: 1.5rem; color: #27ae60; font-weight: bold;">
+                                    ₹{{ "%.2f"|format(material.price_per_unit) }}/{{ material.unit }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 0.5rem 0;">
+                                <strong>Available:</strong>
+                            </td>
+                            <td style="border: none; padding: 0.5rem 0; text-align: right;">
+                                <span style="font-size: 1.1rem; color: #f39c12; font-weight: bold;">
+                                    {{ material.quantity }} {{ material.unit }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 0.5rem 0;">
+                                <strong>Total Value:</strong>
+                            </td>
+                            <td style="border: none; padding: 0.5rem 0; text-align: right;">
+                                <span style="font-size: 1.2rem; color: #27ae60; font-weight: bold;">
+                                    ₹{{ "%.2f"|format(material.price_per_unit * material.quantity) }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Meta Information -->
+                <div style="
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 1rem;
+                    margin-bottom: 1.5rem;
+                ">
+                    <div style="background: #f0f0f0; padding: 1rem; border-radius: 4px; text-align: center;">
+                        <p style="margin: 0; color: #7f8c8d; font-size: 0.9rem;">Posted</p>
+                        <p style="margin: 0.5rem 0 0 0; color: #2c3e50; font-weight: bold;">
+                            {{ material.created_at.split()[0] }}
+                        </p>
+                    </div>
+                    <div style="background: #f0f0f0; padding: 1rem; border-radius: 4px; text-align: center;">
+                        <p style="margin: 0; color: #7f8c8d; font-size: 0.9rem;">Unit</p>
+                        <p style="margin: 0.5rem 0 0 0; color: #2c3e50; font-weight: bold;">
+                            {{ material.unit }}
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                {% if session.user_id %}
+                    {% if session.user_id != material.user_id %}
+                        <a href="{{ url_for('order_material', material_id=material.id) }}" class="btn btn-success" style="width: 100%; text-align: center; display: block; padding: 1rem;">
+                            🛒 Place Order Now
+                        </a>
+                    {% else %}
+                        <div style="text-align: center; color: #7f8c8d;">
+                            <p>This is your material</p>
+                            <a href="{{ url_for('my_materials') }}" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">
+                                Manage Material
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p style="text-align: center; color: #7f8c8d; margin-bottom: 1rem;">
+                        Login to place an order
+                    </p>
+                    <a href="{{ url_for('login') }}" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">
+                        Login to Order
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Back Button -->
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">← Back to Materials</a>
+    </div>
+</div>
+
+<script>
+    function changeMainImage(imageUrl, thumbnailElement) {
+        // Update main image
+        document.getElementById('mainImage').src = imageUrl;
+        
+        // Update thumbnail borders
+        document.querySelectorAll('.thumbnail').forEach(thumb => {
+            thumb.style.borderColor = '#ddd';
+        });
+        thumbnailElement.style.borderColor = '#3498db';
+    }
+    
+    // Set first thumbnail as active on load
+    document.addEventListener('DOMContentLoaded', () => {
+        const firstThumbnail = document.querySelector('.thumbnail');
+        if (firstThumbnail) {
+            firstThumbnail.style.borderColor = '#3498db';
+        }
+    });
+</script>
+
+<style>
+    .thumbnail:hover {
+        border-color: #3498db !important;
+        box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+    }
+</style>
+{% endblock %}

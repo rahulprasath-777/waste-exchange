@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}List Industrial Waste - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="max-width: 820px; margin: 1rem auto 3rem;">
+    <div style="margin-bottom: 2rem; text-align: center;">
+        <div style="
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--primary-light);
+            color: var(--primary-hover);
+            padding: 0.35rem 0.85rem;
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+        ">
+            <span>👑</span>
+            <span>Supplier Listing Portal</span>
+        </div>
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: var(--slate-900);">
+            Publish New Waste Material
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+            List your recyclable materials, scrap, or industrial by-products to verified buyers
+        </p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        <!-- Section 1: Specifications -->
+        <div style="margin-bottom: 2rem;">
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📋</span>
+                <span>Material Specifications</span>
+            </h3>
+
+            <div class="form-group">
+                <label for="name">Material Name & Grade *</label>
+                <input type="text" id="name" name="name" placeholder="e.g., Heavy Melting Scrap (HMS 1/2), Recycled HDPE Pellets" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category *</label>
+                <select id="category" name="category" required>
+                    <option value="">Select a Category</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Detailed Description & Specifications</label>
+                <textarea id="description" name="description" placeholder="Specify purity percentage, packaging (bales/drums), origin, contaminants if any, or technical specs..."></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="price">Price per Unit (₹) *</label>
+                    <input type="number" id="price" name="price" step="0.01" min="0.01" placeholder="e.g. 150.00" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="unit">Standard Unit *</label>
+                    <select id="unit" name="unit" required>
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="ton">Metric Ton (ton)</option>
+                        <option value="liter">Liter (liter)</option>
+                        <option value="piece">Piece / Unit</option>
+                        <option value="box">Box</option>
+                        <option value="bag">Bag / Drum</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="quantity">Available Volume / Quantity *</label>
+                <input type="number" id="quantity" name="quantity" min="1" placeholder="e.g. 500" required>
+            </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--slate-200); margin: 2rem 0;">
+
+        <!-- Section 2: Photo Uploader -->
+        <div style="margin-bottom: 2rem;">
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📸</span>
+                <span>Product Gallery (Up to 5 Photos)</span>
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+                Listings with high-resolution photos receive 4x more buyer inquiries. First image is used as the cover.
+            </p>
+
+            <div id="dropZone" style="
+                background: var(--slate-50);
+                border: 2px dashed #94a3b8;
+                border-radius: var(--radius-md);
+                padding: 2.5rem 1.5rem;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            ">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📸</div>
+                <div style="font-weight: 700; color: var(--slate-800); font-size: 1.05rem;">
+                    Click to select images or drag and drop
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+                    Supports PNG, JPG, JPEG, GIF, WEBP up to 5MB each
+                </div>
+            </div>
+
+            <input type="file" id="images" name="images" multiple accept="image/*" style="display: none;">
+
+            <!-- Preview Grid -->
+            <div id="imagePreview" style="display: none; margin-top: 1.5rem;">
+                <h4 style="color: var(--slate-800); font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Selected Photos Preview:</h4>
+                <div id="previewContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem;">
+                </div>
+            </div>
+
+            <div id="imageInfo" style="margin-top: 1rem; padding: 0.75rem 1rem; background: var(--primary-light); border-radius: var(--radius-sm); border: 1px solid #a7f3d0; display: none;">
+                <p style="margin: 0; color: var(--primary-hover); font-weight: 600; font-size: 0.9rem;">
+                    ✓ <span id="imageCount">0</span> image(s) selected
+                </p>
+            </div>
+        </div>
+
+        <div class="form-submit" style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-success" style="width: 100%; font-size: 1.05rem; padding: 0.9rem;">
+                🚀 Publish Material to Marketplace
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('images');
+    const previewContainer = document.getElementById('previewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageInfo = document.getElementById('imageInfo');
+    const imageCount = document.getElementById('imageCount');
+    const MAX_IMAGES = 5;
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#10b981';
+        dropZone.style.backgroundColor = '#ecfdf5';
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#94a3b8';
+        dropZone.style.backgroundColor = 'var(--slate-50)';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#94a3b8';
+        dropZone.style.backgroundColor = 'var(--slate-50)';
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            displayPreviews(e.dataTransfer.files);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        displayPreviews(e.target.files);
+    });
+
+    function displayPreviews(files) {
+        previewContainer.innerHTML = '';
+        const validFiles = Array.from(files).filter(f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024);
+
+        if (validFiles.length > 0) {
+            imagePreview.style.display = 'block';
+            imageInfo.style.display = 'block';
+            imageCount.textContent = Math.min(validFiles.length, MAX_IMAGES);
+
+            validFiles.slice(0, MAX_IMAGES).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const preview = document.createElement('div');
+                    preview.style.cssText = `
+                        position: relative;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        border: 2px solid ${index === 0 ? '#10b981' : '#cbd5e1'};
+                        background: #f1f5f9;
+                        box-shadow: var(--shadow-sm);
+                    `;
+
+                    const img = document.createElement('img');
+                    img.src = event.target.result;
+                    img.style.cssText = `
+                        width: 100%;
+                        height: 120px;
+                        object-fit: cover;
+                        display: block;
+                    `;
+
+                    const badge = document.createElement('div');
+                    badge.style.cssText = `
+                        position: absolute;
+                        top: 6px;
+                        left: 6px;
+                        background: ${index === 0 ? '#10b981' : '#0f172a'};
+                        color: white;
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-size: 0.7rem;
+                        font-weight: 700;
+                    `;
+                    badge.textContent = index === 0 ? 'COVER' : `#${index + 1}`;
+
+                    preview.appendChild(img);
+                    preview.appendChild(badge);
+                    previewContainer.appendChild(preview);
+                };
+                reader.readAsDataURL(file);
+            });
+        } else {
+            imagePreview.style.display = 'none';
+            imageInfo.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

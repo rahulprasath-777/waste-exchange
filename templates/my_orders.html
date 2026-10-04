@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--slate-900);">
+        🛒 My Procurement Orders
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Track outgoing material orders placed with verified suppliers</p>
+</div>
+
+{% if orders %}
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Order Ref</th>
+                    <th>Material</th>
+                    <th>Supplier</th>
+                    <th>Ordered Qty</th>
+                    <th>Unit Price</th>
+                    <th>Total Price</th>
+                    <th>Status</th>
+                    <th>Order Date</th>
+                    <th style="text-align: right;">Feedback</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td><strong>#{{ order.id }}</strong></td>
+                        <td>
+                            <a href="{{ url_for('view_material', material_id=order.material_id) }}" style="color: var(--primary); font-weight: 700; text-decoration: none;">
+                                {{ order.name }}
+                            </a>
+                        </td>
+                        <td>{{ order.seller_company }}</td>
+                        <td><strong>{{ order.quantity }}</strong></td>
+                        <td>₹{{ "%.2f"|format(order.price_per_unit) }}</td>
+                        <td><strong style="color: var(--primary-hover); font-size: 1rem;">₹{{ "%.2f"|format(order.total_price) }}</strong></td>
+                        <td>
+                            {% if order.status == 'pending' %}
+                                <span class="badge badge-pending">⏳ Pending Review</span>
+                            {% elif order.status == 'approved' %}
+                                <span class="badge badge-approved">✓ Supplier Approved</span>
+                            {% elif order.status == 'rejected' %}
+                                <span class="badge badge-rejected">✗ Order Rejected</span>
+                            {% elif order.status == 'completed' %}
+                                <span class="badge badge-completed">✓ Completed</span>
+                            {% endif %}
+                        </td>
+                        <td><span style="font-size: 0.85rem; color: var(--text-muted);">{{ order.created_at.split()[0] if order.created_at else '' }}</span></td>
+                        <td style="text-align: right;">
+                            {% if order.status == 'completed' and not order.review_id %}
+                                <a href="{{ url_for('rate_order', order_id=order.id) }}" class="btn btn-gold" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">
+                                    ⭐ Rate Supplier
+                                </a>
+                            {% elif order.review_id %}
+                                <span style="color: var(--primary); font-weight: 700; font-size: 0.85rem;">✓ Reviewed</span>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-size: 0.85rem;">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">🛒</span>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.5rem;">No orders placed yet</h3>
+        <p style="margin-bottom: 1.5rem;">Browse materials in the marketplace to source recyclable stock.</p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Browse Catalog</a>
+    </div>
+{% endif %}
+{% endblock %}

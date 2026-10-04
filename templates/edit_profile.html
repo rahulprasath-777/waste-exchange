@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Enterprise Profile - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="max-width: 650px; margin: 2rem auto 4rem;">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--slate-900);">
+            🏢 Edit Enterprise Profile
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+            Update your verified company details and contact channels
+        </p>
+    </div>
+
+    <form method="POST">
+        <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+            <div style="font-size: 0.9rem; color: var(--slate-700); line-height: 1.6;">
+                <div>🏢 <strong>Company:</strong> {{ user.company_name }}</div>
+                <div>👤 <strong>Username:</strong> @{{ user.username }}</div>
+                <div>📧 <strong>Primary Email:</strong> {{ user.email }}</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="company_description">Company Overview & Facility Capabilities</label>
+            <textarea id="company_description" name="company_description" placeholder="Describe your industrial recycling operations, certifications (ISO, etc.), or factory capabilities...">{{ user.company_description or '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="location">Operating Location (City, State / Country)</label>
+            <input type="text" id="location" name="location" placeholder="e.g. Mumbai, Maharashtra, India" value="{{ user.location or '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="contact_phone">Direct Procurement Phone / WhatsApp</label>
+            <input type="text" id="contact_phone" name="contact_phone" placeholder="+91 XXXXXXXXXX" value="{{ user.contact_phone or '' }}">
+        </div>
+
+        <div class="form-submit" style="display: flex; gap: 0.75rem; margin-top: 1.75rem;">
+            <button type="submit" class="btn btn-success" style="flex: 2; padding: 0.85rem;">
+                ✓ Save Profile Updates
+            </button>
+            <a href="{{ url_for('profile', user_id=session.user_id) }}" class="btn btn-secondary" style="flex: 1; padding: 0.85rem;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

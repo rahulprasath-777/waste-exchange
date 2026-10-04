@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Search Catalog - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--slate-900);">
+        🔍 Advanced Material Search
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Filter by category, price ranges, available volume, and specifications</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 280px 1fr; gap: 2rem; align-items: start;">
+    <!-- Filters Sidebar -->
+    <div class="card" style="padding: 1.5rem; position: sticky; top: 90px;">
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+            <span>Filters</span>
+            <a href="{{ url_for('search') }}" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 600;">Reset</a>
+        </h3>
+
+        <form method="GET" action="{{ url_for('search') }}" style="padding: 0; background: none; border: none; box-shadow: none;">
+            <div class="form-group">
+                <label for="search-q">Keyword</label>
+                <input type="text" id="search-q" name="q" value="{{ search_query }}" placeholder="e.g. Copper, HDPE, Glass...">
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="form-group">
+                    <label for="min_price">Min (₹)</label>
+                    <input type="number" id="min_price" name="min_price" step="0.01" placeholder="0" value="{{ request.args.get('min_price', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="max_price">Max (₹)</label>
+                    <input type="number" id="max_price" name="max_price" step="0.01" placeholder="99999" value="{{ request.args.get('max_price', '') }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="min_qty">Min Quantity</label>
+                <input type="number" id="min_qty" name="min_qty" placeholder="0" value="{{ request.args.get('min_qty', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="sort">Sort Results</label>
+                <select id="sort" name="sort">
+                    <option value="newest" {% if request.args.get('sort','newest')=='newest' %}selected{% endif %}>Newest First</option>
+                    <option value="oldest" {% if request.args.get('sort')=='oldest' %}selected{% endif %}>Oldest First</option>
+                    <option value="price_low" {% if request.args.get('sort')=='price_low' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_high" {% if request.args.get('sort')=='price_high' %}selected{% endif %}>Price: High to Low</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                Apply Filters
+            </button>
+        </form>
+    </div>
+
+    <!-- Search Results -->
+    <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div style="font-size: 1rem; color: var(--slate-700); font-weight: 600;">
+                Showing <strong>{{ materials|length }}</strong> results
+                {% if search_query %}
+                    for "<span style="color: var(--primary);">{{ search_query }}</span>"
+                {% endif %}
+                {% if selected_category %}
+                    in <span class="badge badge-success">{{ selected_category }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if materials %}
+            <div class="grid" style="margin-top: 0;">
+                {% for material in materials %}
+                    <div class="material-card">
+                        <div class="material-img-wrapper">
+                            {% if material.image_filename %}
+                                <img src="{{ url_for('static', filename='uploads/materials/' + material.image_filename) }}" alt="{{ material.name }}">
+                            {% else %}
+                                <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; background: #f1f5f9;">
+                                    <span style="font-size: 2.5rem; margin-bottom: 0.25rem;">📦</span>
+                                    <span style="font-size: 0.8rem; font-weight: 600;">No Photo</span>
+                                </div>
+                            {% endif %}
+                            <span class="material-badge-category">{{ material.category }}</span>
+                        </div>
+
+                        <div class="material-card-body">
+                            <h3 class="material-name">{{ material.name }}</h3>
+                            <div class="material-company">
+                                <span>🏢</span>
+                                <span>{{ material.company_name }}</span>
+                            </div>
+
+                            {% if material.description %}
+                                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.75rem; line-height: 1.4;">
+                                    {{ material.description[:85] }}{% if material.description|length > 85 %}...{% endif %}
+                                </p>
+                            {% endif %}
+
+                            <div class="material-price-row">
+                                <div>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase;">Unit Price</span>
+                                    <span class="material-price">₹{{ "%.2f"|format(material.price_per_unit) }} <small style="font-size: 0.85rem; color: var(--slate-600); font-weight: 500;">/ {{ material.unit }}</small></span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase;">Stock</span>
+                                    <span class="material-stock">{{ material.quantity }} {{ material.unit }}</span>
+                                </div>
+                            </div>
+
+                            <div class="material-actions">
+                                <a href="{{ url_for('view_material', material_id=material.id) }}" class="btn btn-secondary">
+                                    View
+                                </a>
+                                {% if session.user_id and session.user_id != material.user_id %}
+                                    <a href="{{ url_for('order_material', material_id=material.id) }}" class="btn btn-success">
+                                        Order
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <span class="empty-state-icon">🔍</span>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.5rem;">No matching materials found</h3>
+                <p style="margin-bottom: 1.5rem;">Try adjusting your keyword, expanding price bounds, or clearing filters.</p>
+                <a href="{{ url_for('search') }}" class="btn btn-primary">Clear All Filters</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

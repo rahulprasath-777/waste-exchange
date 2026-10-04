@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Marketplace - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--slate-900);">
+            📦 Active Material Listings
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Browse and procure verified industrial waste materials from certified suppliers</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ url_for('search') }}" class="btn btn-secondary">🔍 Filter Catalog</a>
+        <a href="{{ url_for('upload_material') }}" class="btn btn-success">+ List New Material</a>
+    </div>
+</div>
+
+{% if materials %}
+    <div class="grid">
+        {% for material in materials %}
+            <div class="material-card">
+                <div class="material-img-wrapper">
+                    {% if material.image_filename %}
+                        <img src="{{ url_for('static', filename='uploads/materials/' + material.image_filename) }}" alt="{{ material.name }}">
+                    {% else %}
+                        <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; background: #f1f5f9;">
+                            <span style="font-size: 2.5rem; margin-bottom: 0.25rem;">📦</span>
+                            <span style="font-size: 0.8rem; font-weight: 600;">No Photo Provided</span>
+                        </div>
+                    {% endif %}
+                    <span class="material-badge-category">{{ material.category }}</span>
+                </div>
+
+                <div class="material-card-body">
+                    <h3 class="material-name">{{ material.name }}</h3>
+                    <div class="material-company">
+                        <span>🏢</span>
+                        <a href="{{ url_for('profile', user_id=material.user_id) }}" style="color: inherit; text-decoration: none; font-weight: 600;">
+                            {{ material.company_name }}
+                        </a>
+                    </div>
+
+                    {% if material.description %}
+                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.75rem; line-height: 1.4;">
+                            {{ material.description[:90] }}{% if material.description|length > 90 %}...{% endif %}
+                        </p>
+                    {% endif %}
+
+                    <div class="material-price-row">
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase;">Unit Price</span>
+                            <span class="material-price">₹{{ "%.2f"|format(material.price_per_unit) }} <small style="font-size: 0.85rem; color: var(--slate-600); font-weight: 500;">/ {{ material.unit }}</small></span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase;">Stock</span>
+                            <span class="material-stock">{{ material.quantity }} {{ material.unit }}</span>
+                        </div>
+                    </div>
+
+                    <div class="material-actions">
+                        <a href="{{ url_for('view_material', material_id=material.id) }}" class="btn btn-secondary">
+                            View
+                        </a>
+                        {% if session.user_id and session.user_id != material.user_id %}
+                            <a href="{{ url_for('order_material', material_id=material.id) }}" class="btn btn-success">
+                                Order
+                            </a>
+                        {% elif session.user_id and session.user_id == material.user_id %}
+                            <a href="{{ url_for('edit_material', material_id=material.id) }}" class="btn btn-gold">
+                                Edit Listing
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">👑</span>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.5rem;">No materials available right now</h3>
+        <p style="margin-bottom: 1.5rem;">Be the first supplier to list inventory on KING Waste Exchange.</p>
+        <a href="{{ url_for('upload_material') }}" class="btn btn-success">+ Upload New Material</a>
+    </div>
+{% endif %}
+{% endblock %}

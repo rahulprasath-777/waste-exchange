@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Materials - Industrial Waste Exchange{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Available Waste Materials</h2>
+    <p class="text-muted">Browse materials from companies and place your orders</p>
+    
+    {% if materials %}
+        <div style="margin-top: 20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Company</th>
+                        <th>Available Quantity</th>
+                        <th>Price per Unit</th>
+                        <th>Total Value</th>
+                        <th>Contact</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for material in materials %}
+                    <tr>
+                        <td>
+                            <strong>{{ material.name }}</strong>
+                            {% if material.description %}
+                                <br><span class="text-muted" style="font-size: 12px;">{{ material.description[:50] }}...</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ material.company_name }}</td>
+                        <td>{{ material.quantity }} {{ material.unit }}</td>
+                        <td><span class="price-highlight">₹{{ "%.2f"|format(material.price_per_unit) }}</span></td>
+                        <td>₹{{ "%.2f"|format(material.quantity * material.price_per_unit) }}</td>
+                        <td>
+                            <small>
+                                📧 {{ material.company_email }}<br>
+                                {% if material.company_phone %}
+                                    📱 {{ material.company_phone }}
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            {% if session.get('company_id') %}
+                                <a href="{{ url_for('buy_material', material_id=material.id) }}" class="btn btn-success" style="padding: 8px 12px; font-size: 12px;">Buy</a>
+                            {% else %}
+                                <a href="{{ url_for('login') }}" class="btn" style="padding: 8px 12px; font-size: 12px;">Login to Buy</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center; margin-top: 40px;">
+            <h3>No Materials Available</h3>
+            <p>There are currently no materials listed on the platform.</p>
+            <p>
+                {% if session.get('company_id') %}
+                    <a href="{{ url_for('upload_material') }}" class="btn btn-success">Be the first to upload a material</a>
+                {% else %}
+                    <a href="{{ url_for('register') }}" class="btn">Register your company to list materials</a>
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

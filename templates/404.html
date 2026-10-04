@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}404 - Page Not Found - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div class="empty-state" style="padding: 5rem 2rem; max-width: 600px; margin: 3rem auto;">
+    <div style="
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(245, 158, 11, 0.1);
+        border: 2px solid #f59e0b;
+        margin-bottom: 1.5rem;
+    ">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="King Logo" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+    </div>
+    <h1 style="font-family: 'Outfit', sans-serif; font-size: 2.25rem; font-weight: 800; color: var(--slate-900); margin-bottom: 0.5rem;">
+        404 - Resource Not Found
+    </h1>
+    <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 2rem;">
+        The requested marketplace page or waste listing could not be found or has been relocated.
+    </p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary" style="padding: 0.8rem 1.75rem;">
+        ← Return to Marketplace Home
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Listing - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 2rem auto 4rem;">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--slate-900);">
+            ✏️ Edit Waste Material Listing
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+            Update price per unit, available volume, or specifications
+        </p>
+    </div>
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="name">Material Name & Grade *</label>
+            <input type="text" id="name" name="name" value="{{ material.name }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="category">Category *</label>
+            <select id="category" name="category" required>
+                {% for cat in ['Metal', 'Plastic', 'Paper', 'Glass', 'Electronic', 'Chemical', 'Other'] %}
+                    <option value="{{ cat }}" {% if material.category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Detailed Description & Specifications</label>
+            <textarea id="description" name="description">{{ material.description or '' }}</textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="price">Price per Unit (₹) *</label>
+                <input type="number" id="price" name="price" step="0.01" min="0.01" value="{{ material.price_per_unit }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="unit">Unit *</label>
+                <select id="unit" name="unit" required>
+                    <option value="kg" {% if material.unit == 'kg' %}selected{% endif %}>Kilogram (kg)</option>
+                    <option value="ton" {% if material.unit == 'ton' %}selected{% endif %}>Metric Ton (ton)</option>
+                    <option value="liter" {% if material.unit == 'liter' %}selected{% endif %}>Liter (liter)</option>
+                    <option value="piece" {% if material.unit == 'piece' %}selected{% endif %}>Piece / Unit</option>
+                    <option value="box" {% if material.unit == 'box' %}selected{% endif %}>Box</option>
+                    <option value="bag" {% if material.unit == 'bag' %}selected{% endif %}>Bag / Drum</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="quantity">Available Volume / Quantity *</label>
+            <input type="number" id="quantity" name="quantity" min="0" value="{{ material.quantity }}" required>
+        </div>
+
+        <div class="form-submit" style="display: flex; gap: 0.75rem; margin-top: 1.75rem;">
+            <button type="submit" class="btn btn-success" style="flex: 2; padding: 0.85rem;">
+                ✓ Save Material Changes
+            </button>
+            <a href="{{ url_for('my_materials') }}" class="btn btn-secondary" style="flex: 1; padding: 0.85rem;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

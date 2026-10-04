@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Material - Waste Exchange Platform{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 2rem auto;">
+    <div style="background: white; padding: 2rem; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h2 style="color: #2c3e50; margin-bottom: 2rem;">📦 Upload Waste Material</h2>
+        
+        <form method="POST" enctype="multipart/form-data">
+            <!-- Material Information Section -->
+            <fieldset style="border: 1px solid #ddd; padding: 1.5rem; border-radius: 4px; margin-bottom: 2rem;">
+                <legend style="font-weight: bold; color: #2c3e50;">Material Information</legend>
+                
+                <div class="form-group">
+                    <label for="name">Material Name *</label>
+                    <input type="text" id="name" name="name" placeholder="e.g., Scrap Aluminum" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Category *</label>
+                    <select id="category" name="category" required>
+                        <option value="">Select a category</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" placeholder="Describe the material condition, type, specifications, etc."></textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="price">Price per Unit (₹) *</label>
+                        <input type="number" id="price" name="price" step="0.01" placeholder="100.00" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="unit">Unit *</label>
+                        <select id="unit" name="unit" required>
+                            <option value="kg">kg</option>
+                            <option value="ton">ton</option>
+                            <option value="liter">liter</option>
+                            <option value="piece">piece</option>
+                            <option value="box">box</option>
+                            <option value="bag">bag</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quantity">Quantity Available *</label>
+                    <input type="number" id="quantity" name="quantity" placeholder="100" required>
+                </div>
+            </fieldset>
+            
+            <!-- Photo Upload Section (Amazon/Flipkart Style) -->
+            <fieldset style="border: 1px solid #ddd; padding: 1.5rem; border-radius: 4px; margin-bottom: 2rem;">
+                <legend style="font-weight: bold; color: #2c3e50;">📸 Upload Photos (Max 5 images)</legend>
+                
+                <div style="background: #f9f9f9; padding: 2rem; border: 2px dashed #3498db; border-radius: 4px; text-align: center; cursor: pointer;" id="dropZone">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📷</div>
+                    <p style="color: #2c3e50; font-weight: bold; margin: 0.5rem 0;">
+                        Click to upload or drag and drop
+                    </p>
+                    <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0.5rem 0;">
+                        PNG, JPG, GIF, WEBP up to 5MB each
+                    </p>
+                    <p style="color: #7f8c8d; font-size: 0.85rem; margin: 1rem 0;">
+                        ℹ️ First image will be the product thumbnail
+                    </p>
+                </div>
+                
+                <input type="file" id="images" name="images" multiple accept="image/*" style="display: none;">
+                
+                <!-- Image Preview Section -->
+                <div id="imagePreview" style="display: none; margin-top: 1.5rem;">
+                    <h4 style="color: #2c3e50; margin-bottom: 1rem;">📷 Selected Images:</h4>
+                    <div id="previewContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem;">
+                    </div>
+                </div>
+                
+                <!-- Image Info -->
+                <div id="imageInfo" style="margin-top: 1rem; padding: 1rem; background: #ecf0f1; border-radius: 4px; display: none;">
+                    <p style="margin: 0; color: #2c3e50;">
+                        ✓ <span id="imageCount">0</span> image(s) selected (max 5)
+                    </p>
+                </div>
+                
+                <p style="color: #7f8c8d; font-size: 0.9rem; margin-top: 1rem;">
+                    <strong>Tips:</strong>
+                    <br>• Use clear, well-lit photos
+                    <br>• Show different angles of the material
+                    <br>• Include size/scale reference if possible
+                    <br>• First image appears as main product photo
+                </p>
+            </fieldset>
+            
+            <div class="form-submit">
+                <button type="submit" class="btn btn-success" style="width: 100%;">✓ Upload Material with Photos</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('images');
+    const previewContainer = document.getElementById('previewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageInfo = document.getElementById('imageInfo');
+    const imageCount = document.getElementById('imageCount');
+    const MAX_IMAGES = 5;
+    
+    // Click to upload
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#27ae60';
+        dropZone.style.backgroundColor = '#f0fdf4';
+    });
+    
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#3498db';
+        dropZone.style.backgroundColor = 'transparent';
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#3498db';
+        dropZone.style.backgroundColor = 'transparent';
+        
+        const files = e.dataTransfer.files;
+        fileInput.files = files;
+        displayPreviews(files);
+    });
+    
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+        displayPreviews(e.target.files);
+    });
+    
+    function displayPreviews(files) {
+        previewContainer.innerHTML = '';
+        let validCount = 0;
+        
+        for (let i = 0; i < Math.min(files.length, MAX_IMAGES); i++) {
+            const file = files[i];
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                continue;
+            }
+            
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                continue;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                validCount++;
+                
+                const preview = document.createElement('div');
+                preview.style.cssText = `
+                    position: relative;
+                    border-radius: 4px;
+                    overflow: hidden;
+                    border: 2px solid #3498db;
+                    background: #f0f0f0;
+                `;
+                
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.cssText = `
+                    width: 100%;
+                    height: 120px;
+                    object-fit: cover;
+                    display: block;
+                `;
+                
+                const badge = document.createElement('div');
+                badge.style.cssText = `
+                    position: absolute;
+                    top: 5px;
+                    left: 5px;
+                    background: #f39c12;
+                    color: white;
+                    padding: 3px 8px;
+                    border-radius: 3px;
+                    font-size: 0.85rem;
+                    font-weight: bold;
+                `;
+                badge.textContent = i === 0 ? 'MAIN' : `IMG ${i}`;
+                
+                preview.appendChild(img);
+                preview.appendChild(badge);
+                previewContainer.appendChild(preview);
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // Update UI
+        if (files.length > 0) {
+            imagePreview.style.display = 'block';
+            imageInfo.style.display = 'block';
+            imageCount.textContent = Math.min(files.length, MAX_IMAGES);
+            
+            if (files.length > MAX_IMAGES) {
+                imageInfo.innerHTML += `<p style="color: #e74c3c; margin: 0.5rem 0 0 0;">
+                    ⚠️ Only first 5 images will be uploaded
+                </p>`;
+            }
+        } else {
+            imagePreview.style.display = 'none';
+            imageInfo.style.display = 'none';
+        }
+    }
+</script>
+
+<style>
+    fieldset {
+        border: 1px solid #ddd !important;
+        border-radius: 4px !important;
+    }
+    
+    legend {
+        padding: 0 0.5rem !important;
+        color: #2c3e50 !important;
+    }
+</style>
+{% endblock %}

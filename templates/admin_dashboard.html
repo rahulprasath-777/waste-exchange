@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Console - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <div style="
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--gold-light);
+            color: #92400e;
+            padding: 0.35rem 0.85rem;
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        ">
+            <span>👑</span>
+            <span>Platform Governance</span>
+        </div>
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--slate-900);">
+            ⚙️ Royal Administrator Dashboard
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">System overview, transaction analytics, top sellers, and network health</p>
+    </div>
+</div>
+
+<!-- Key Performance Metrics Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="card" style="padding: 1.5rem; border-left: 4px solid #3b82f6;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Enterprise Users</span>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 2.25rem; font-weight: 800; color: var(--slate-900); margin: 0.25rem 0;">
+            {{ stats.total_users }}
+        </div>
+        <span style="font-size: 0.8rem; color: #3b82f6; font-weight: 600;">Active accounts</span>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; border-left: 4px solid #10b981;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Listed Batches</span>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 2.25rem; font-weight: 800; color: var(--slate-900); margin: 0.25rem 0;">
+            {{ stats.total_materials }}
+        </div>
+        <span style="font-size: 0.8rem; color: #10b981; font-weight: 600;">Inventory catalog</span>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; border-left: 4px solid #f59e0b;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Orders Executed</span>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 2.25rem; font-weight: 800; color: var(--slate-900); margin: 0.25rem 0;">
+            {{ stats.total_orders }}
+        </div>
+        <span style="font-size: 0.8rem; color: #f59e0b; font-weight: 600;">{{ stats.pending_orders }} pending review</span>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; border-left: 4px solid #8b5cf6;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Gross Marketplace Value</span>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 2.25rem; font-weight: 800; color: var(--slate-900); margin: 0.25rem 0;">
+            ₹{{ "%.0f"|format(stats.total_value) }}
+        </div>
+        <span style="font-size: 0.8rem; color: #8b5cf6; font-weight: 600;">Cumulative trade</span>
+    </div>
+</div>
+
+<!-- Top Sellers & Recent Orders Grid -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+    <!-- Top Sellers -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--slate-200); background: var(--slate-50);">
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0;">
+                🏆 Top Performing Suppliers
+            </h3>
+        </div>
+        {% if top_sellers %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Orders</th>
+                        <th>Rating</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for seller in top_sellers %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('profile', user_id=seller.id) }}" style="color: var(--primary); font-weight: 700; text-decoration: none;">
+                                    {{ seller.company_name }}
+                                </a>
+                            </td>
+                            <td><strong>{{ seller.order_count or 0 }}</strong> orders</td>
+                            <td>
+                                {% if seller.avg_rating %}
+                                    <strong style="color: var(--gold);">{{ "%.1f"|format(seller.avg_rating) }} ⭐</strong>
+                                {% else %}
+                                    <span style="color: var(--text-muted);">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                No seller records found.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Fulfillment Rate Card -->
+    <div class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: center;">
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin-bottom: 1rem;">
+            📊 Network Completion Rate
+        </h3>
+
+        {% set rate = ((stats.completed_orders / stats.total_orders) * 100) if stats.total_orders > 0 else 0 %}
+        <div style="font-family: 'Outfit', sans-serif; font-size: 3rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem;">
+            {{ "%.1f"|format(rate) }}%
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+            {{ stats.completed_orders }} of {{ stats.total_orders }} total orders completed successfully.
+        </p>
+
+        <div style="background: var(--slate-100); height: 12px; border-radius: var(--radius-full); overflow: hidden;">
+            <div style="background: linear-gradient(90deg, #10b981, #059669); height: 100%; width: {{ rate }}%;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders Activity -->
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--slate-200); background: var(--slate-50);">
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0;">
+            ⏱️ Recent Platform Activity
+        </h3>
+    </div>
+    {% if recent_orders %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Material</th>
+                    <th>Buyer</th>
+                    <th>Qty</th>
+                    <th>Total (₹)</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in recent_orders %}
+                    <tr>
+                        <td><strong>#{{ order.id }}</strong></td>
+                        <td>{{ order.name }}</td>
+                        <td>{{ order.company_name }}</td>
+                        <td>{{ order.quantity }}</td>
+                        <td><strong style="color: var(--primary);">₹{{ "%.2f"|format(order.total_price) }}</strong></td>
+                        <td>
+                            {% if order.status == 'pending' %}
+                                <span class="badge badge-pending">Pending</span>
+                            {% elif order.status == 'approved' %}
+                                <span class="badge badge-approved">Approved</span>
+                            {% elif order.status == 'completed' %}
+                                <span class="badge badge-completed">Completed</span>
+                            {% elif order.status == 'rejected' %}
+                                <span class="badge badge-rejected">Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td><span style="font-size: 0.85rem; color: var(--text-muted);">{{ order.created_at.split()[0] if order.created_at else '' }}</span></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+            No platform orders recorded yet.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

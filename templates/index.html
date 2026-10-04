@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}KING Waste Exchange - Premium Industrial Resource Marketplace{% endblock %}
+
+{% block content %}
+<!-- Royal Hero Section -->
+<div style="
+    background: radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0) 50%),
+                linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-radius: var(--radius-lg);
+    padding: 3.5rem 2.5rem;
+    color: white;
+    margin-bottom: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-lg);
+">
+    <!-- Floating Logo Glow -->
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 2rem; flex-wrap: wrap;">
+        <div style="max-width: 650px;">
+            <div style="
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: rgba(245, 158, 11, 0.12);
+                border: 1px solid rgba(245, 158, 11, 0.3);
+                padding: 0.35rem 0.85rem;
+                border-radius: var(--radius-full);
+                font-size: 0.8rem;
+                font-weight: 700;
+                color: #fbbf24;
+                margin-bottom: 1.25rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            ">
+                <span>👑</span>
+                <span>Next-Generation Circular Commerce</span>
+            </div>
+
+            <h1 style="
+                font-family: 'Outfit', sans-serif;
+                font-size: clamp(2rem, 4vw, 3.2rem);
+                font-weight: 800;
+                line-height: 1.15;
+                margin-bottom: 1.25rem;
+                letter-spacing: -0.02em;
+            ">
+                Monetize Industrial Waste. <br>
+                <span style="background: linear-gradient(135deg, #34d399 0%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    Source Raw Materials.
+                </span>
+            </h1>
+
+            <p style="font-size: 1.1rem; color: #94a3b8; line-height: 1.6; margin-bottom: 2rem;">
+                Connect directly with verified manufacturing enterprises to buy and sell recyclable scrap, metals, polymers, chemicals, and industrial excess at competitive market rates.
+            </p>
+
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                {% if not session.user_id %}
+                    <a href="{{ url_for('register') }}" class="btn btn-success" style="font-size: 1rem; padding: 0.85rem 1.75rem;">
+                        ✨ Create Free Company Account
+                    </a>
+                    <a href="{{ url_for('search') }}" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.1); color: white; border-color: rgba(255, 255, 255, 0.2); font-size: 1rem; padding: 0.85rem 1.75rem;">
+                        🔍 Browse All Listings
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('upload_material') }}" class="btn btn-success" style="font-size: 1rem; padding: 0.85rem 1.75rem;">
+                        + List New Waste Batch
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary" style="font-size: 1rem; padding: 0.85rem 1.75rem;">
+                        📦 Explore Marketplace
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="text-align: center; flex: 1; min-width: 260px; display: flex; justify-content: center;">
+            <div style="
+                position: relative;
+                padding: 1.5rem;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 50%;
+                box-shadow: 0 0 50px rgba(245, 158, 11, 0.2);
+            ">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="King Emblem" style="
+                    width: 180px;
+                    height: 180px;
+                    border-radius: 50%;
+                    object-fit: cover;
+                    border: 3px solid #f59e0b;
+                    box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+                ">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats / Value Props Banner -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+    <div class="card" style="padding: 1.25rem; text-align: center; background: white;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.25rem;">♻️</div>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: var(--slate-900);">100% Verified</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Certified Industrial Buyers & Sellers</p>
+    </div>
+    <div class="card" style="padding: 1.25rem; text-align: center; background: white;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.25rem;">⚡</div>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: var(--slate-900);">Instant Dealings</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Direct transparent quotation & order pipeline</p>
+    </div>
+    <div class="card" style="padding: 1.25rem; text-align: center; background: white;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.25rem;">🛡️</div>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: var(--slate-900);">Rated Suppliers</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Reputation system with verified feedback</p>
+    </div>
+    <div class="card" style="padding: 1.25rem; text-align: center; background: white;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.25rem;">👑</div>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: var(--slate-900);">Royal Quality</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">High standard categorization & photo auditing</p>
+    </div>
+</div>
+
+<!-- Section Title -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.65rem; font-weight: 800; color: var(--slate-900);">
+            Featured Marketplace Listings
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Recently uploaded materials available for immediate procurement</p>
+    </div>
+    <a href="{{ url_for('search') }}" class="btn btn-secondary" style="font-size: 0.875rem;">
+        View Full Catalog →
+    </a>
+</div>
+
+{% if materials %}
+    <div class="grid">
+        {% for material in materials %}
+            <div class="material-card">
+                <div class="material-img-wrapper">
+                    {% if material.image_filename %}
+                        <img src="{{ url_for('static', filename='uploads/materials/' + material.image_filename) }}" alt="{{ material.name }}">
+                    {% else %}
+                        <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; background: #f1f5f9;">
+                            <span style="font-size: 2.5rem; margin-bottom: 0.25rem;">📦</span>
+                            <span style="font-size: 0.8rem; font-weight: 600;">No Photo Provided</span>
+                        </div>
+                    {% endif %}
+                    <span class="material-badge-category">{{ material.category }}</span>
+                </div>
+
+                <div class="material-card-body">
+                    <h3 class="material-name">{{ material.name }}</h3>
+                    <div class="material-company">
+                        <span>🏢</span>
+                        <span>{{ material.company_name }}</span>
+                    </div>
+
+                    {% if material.description %}
+                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.75rem; line-height: 1.4;">
+                            {{ material.description[:90] }}{% if material.description|length > 90 %}...{% endif %}
+                        </p>
+                    {% endif %}
+
+                    <div class="material-price-row">
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase;">Unit Price</span>
+                            <span class="material-price">₹{{ "%.2f"|format(material.price_per_unit) }} <small style="font-size: 0.85rem; color: var(--slate-600); font-weight: 500;">/ {{ material.unit }}</small></span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase;">Stock</span>
+                            <span class="material-stock">{{ material.quantity }} {{ material.unit }}</span>
+                        </div>
+                    </div>
+
+                    <div class="material-actions">
+                        <a href="{{ url_for('view_material', material_id=material.id) }}" class="btn btn-secondary">
+                            View Details
+                        </a>
+                        {% if session.user_id and session.user_id != material.user_id %}
+                            <a href="{{ url_for('order_material', material_id=material.id) }}" class="btn btn-success">
+                                Order Now
+                            </a>
+                        {% elif not session.user_id %}
+                            <a href="{{ url_for('login') }}" class="btn btn-primary">
+                                Procure
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">👑</span>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.5rem;">No materials currently listed</h3>
+        <p style="margin-bottom: 1.5rem;">Be the pioneer supplier to list your recycled materials on KING Waste Exchange.</p>
+        {% if session.user_id %}
+            <a href="{{ url_for('upload_material') }}" class="btn btn-success">+ Upload First Material</a>
+        {% else %}
+            <a href="{{ url_for('register') }}" class="btn btn-success">Register Company Account</a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

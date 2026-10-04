@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}{{ material.name }} - KING Waste Exchange{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 1rem auto 3rem;">
+    <!-- Breadcrumb & Back -->
+    <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <a href="{{ url_for('dashboard') }}" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 0.35rem; font-weight: 500;">
+            <span>←</span> Back to All Materials
+        </a>
+        <span class="badge badge-success">{{ material.category }}</span>
+    </div>
+
+    <div class="card" style="padding: 2.25rem;">
+        <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 2.5rem; align-items: start;">
+            
+            <!-- Gallery View -->
+            <div>
+                {% if images %}
+                    <div id="mainImageContainer" style="
+                        position: relative;
+                        background: #f8fafc;
+                        border-radius: var(--radius-md);
+                        overflow: hidden;
+                        height: 380px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border: 1px solid var(--slate-200);
+                        margin-bottom: 1rem;
+                    ">
+                        <img id="mainImage" src="{{ url_for('static', filename='uploads/materials/' + images[0].image_filename) }}" alt="{{ material.name }}" style="
+                            max-width: 100%;
+                            max-height: 100%;
+                            object-fit: contain;
+                            transition: transform 0.3s ease;
+                        ">
+                    </div>
+
+                    {% if images|length > 1 %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 0.75rem;">
+                            {% for image in images %}
+                                <div style="
+                                    cursor: pointer;
+                                    border: 2px solid {% if loop.first %}var(--primary){% else %}var(--slate-200){% endif %};
+                                    border-radius: var(--radius-sm);
+                                    overflow: hidden;
+                                    height: 70px;
+                                    background: white;
+                                    transition: all 0.2s ease;
+                                " class="thumbnail" onclick="changeMainImage('{{ url_for('static', filename='uploads/materials/' + image.image_filename) }}', this)">
+                                    <img src="{{ url_for('static', filename='uploads/materials/' + image.image_filename) }}" alt="Thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div style="
+                        background: var(--slate-50);
+                        border-radius: var(--radius-md);
+                        height: 340px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        border: 1px solid var(--slate-200);
+                    ">
+                        <span style="font-size: 4rem; margin-bottom: 0.5rem;">📦</span>
+                        <span style="color: var(--text-muted); font-weight: 600;">No images uploaded for this listing</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Material Details & Procurement Action -->
+            <div>
+                <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--slate-900); line-height: 1.25; margin-bottom: 0.5rem;">
+                    {{ material.name }}
+                </h1>
+
+                <!-- Supplier info box -->
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background: var(--slate-50);
+                    padding: 0.85rem 1.25rem;
+                    border-radius: var(--radius-md);
+                    border: 1px solid var(--slate-200);
+                    margin: 1rem 0 1.5rem 0;
+                ">
+                    <div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; display: block;">Supplier</span>
+                        <a href="{{ url_for('profile', user_id=material.user_id) }}" style="color: var(--primary); font-weight: 700; text-decoration: none; font-size: 1rem;">
+                            {{ material.company_name }}
+                        </a>
+                    </div>
+                    <a href="{{ url_for('profile', user_id=material.user_id) }}" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">
+                        View Profile
+                    </a>
+                </div>
+
+                {% if material.description %}
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; color: var(--slate-600); margin-bottom: 0.4rem;">Specifications</h4>
+                        <p style="color: var(--slate-700); line-height: 1.6; font-size: 0.95rem; white-space: pre-line;">
+                            {{ material.description }}
+                        </p>
+                    </div>
+                {% endif %}
+
+                <!-- Pricing Breakdown -->
+                <div style="
+                    background: var(--primary-light);
+                    border: 1px solid #a7f3d0;
+                    border-radius: var(--radius-md);
+                    padding: 1.25rem 1.5rem;
+                    margin-bottom: 1.5rem;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+                        <span style="color: #065f46; font-weight: 600;">Unit Price:</span>
+                        <span style="font-family: 'Outfit', sans-serif; font-size: 1.65rem; font-weight: 800; color: var(--primary-hover);">
+                            ₹{{ "%.2f"|format(material.price_per_unit) }} <small style="font-size: 0.9rem; font-weight: 600;">/ {{ material.unit }}</small>
+                        </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.925rem; color: var(--slate-700); padding-top: 0.5rem; border-top: 1px dashed #a7f3d0;">
+                        <span>Available Quantity:</span>
+                        <span style="font-weight: 700; color: var(--slate-900);">{{ material.quantity }} {{ material.unit }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.925rem; color: var(--slate-700); margin-top: 0.35rem;">
+                        <span>Total Lot Valuation:</span>
+                        <span style="font-weight: 700; color: var(--slate-900);">₹{{ "%.2f"|format(material.price_per_unit * material.quantity) }}</span>
+                    </div>
+                </div>
+
+                <!-- Call to Action -->
+                {% if session.user_id %}
+                    {% if session.user_id != material.user_id %}
+                        {% if material.quantity > 0 %}
+                            <a href="{{ url_for('order_material', material_id=material.id) }}" class="btn btn-success" style="width: 100%; padding: 0.9rem; font-size: 1.05rem;">
+                                🛒 Place Purchase Order
+                            </a>
+                        {% else %}
+                            <button class="btn btn-secondary" style="width: 100%; cursor: not-allowed;" disabled>
+                                Currently Out of Stock
+                            </button>
+                        {% endif %}
+                    {% else %}
+                        <div style="display: flex; gap: 0.75rem;">
+                            <a href="{{ url_for('edit_material', material_id=material.id) }}" class="btn btn-gold" style="flex: 1;">
+                                ✏️ Edit Material
+                            </a>
+                            <a href="{{ url_for('delete_material', material_id=material.id) }}" class="btn btn-danger" style="flex: 1;" onclick="return confirm('Are you sure you want to remove this listing?')">
+                                🗑️ Delete Listing
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-primary" style="width: 100%; padding: 0.9rem; font-size: 1.05rem;">
+                        Login to Purchase
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function changeMainImage(imageUrl, thumbnailElement) {
+        document.getElementById('mainImage').src = imageUrl;
+        document.querySelectorAll('.thumbnail').forEach(thumb => {
+            thumb.style.borderColor = 'var(--slate-200)';
+        });
+        thumbnailElement.style.borderColor = 'var(--primary)';
+    }
+</script>
+{% endblock %}
