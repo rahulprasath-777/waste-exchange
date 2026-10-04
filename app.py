@@ -890,10 +890,13 @@ def server_error(error):
     return render_template('500.html'), 500
 
 
-if __name__ == '__main__':
-    if os.path.exists(app.config['DATABASE']):
-        run_migration()
-    else:
-        init_db()
+# ==================== DATABASE INITIALIZATION ====================
+# This runs on import (works with both `python app.py` and `gunicorn app:app`)
+if os.path.exists(app.config['DATABASE']):
+    run_migration()
+else:
+    init_db()
 
+
+if __name__ == '__main__':
     app.run(debug=True, port=5000)
