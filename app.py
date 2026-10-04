@@ -24,7 +24,7 @@ CLOUDINARY_CONFIGURED = False
 try:
     import cloudinary
     import cloudinary.uploader
-    cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
+    cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME', 'yejiwjmb')
     api_key = os.environ.get('CLOUDINARY_API_KEY')
     api_secret = os.environ.get('CLOUDINARY_API_SECRET')
     cloudinary_url = os.environ.get('CLOUDINARY_URL')

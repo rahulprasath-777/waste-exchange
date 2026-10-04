@@ -16,7 +16,7 @@ services:
       - key: CLOUDINARY_URL
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
-        sync: false
+        value: yejiwjmb
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET
