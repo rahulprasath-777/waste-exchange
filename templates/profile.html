@@ -87,7 +87,7 @@
                     <div class="material-card">
                         <div class="material-img-wrapper">
                             {% if material.image_filename %}
-                                <img src="{{ url_for('static', filename='uploads/materials/' + material.image_filename) }}" alt="{{ material.name }}">
+                                <img src="{{ material.image_filename | img_url }}" alt="{{ material.name }}">
                             {% else %}
                                 <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #f1f5f9; font-size: 2rem;">
                                     📦

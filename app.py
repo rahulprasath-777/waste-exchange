@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-import sqlite3
 import os
 import io
 from datetime import datetime
@@ -11,16 +10,119 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'waste-exchange-secret-key-2024')
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config['DATABASE'] = os.path.join(BASE_DIR, 'waste_exchange.db')
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'materials'), exist_ok=True)
 
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_IMAGES_PER_MATERIAL = 5
 CATEGORIES = ['Metal', 'Plastic', 'Paper', 'Glass', 'Electronic', 'Chemical', 'Other']
 
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'materials'), exist_ok=True)
+# ==================== CLOUDINARY CONFIG ====================
+CLOUDINARY_CONFIGURED = False
+try:
+    import cloudinary
+    import cloudinary.uploader
+    cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
+    api_key = os.environ.get('CLOUDINARY_API_KEY')
+    api_secret = os.environ.get('CLOUDINARY_API_SECRET')
+    cloudinary_url = os.environ.get('CLOUDINARY_URL')
+
+    if cloudinary_url or (cloud_name and api_key and api_secret):
+        if cloudinary_url:
+            cloudinary.config(cloudinary_url=cloudinary_url, secure=True)
+        else:
+            cloudinary.config(
+                cloud_name=cloud_name,
+                api_key=api_key,
+                api_secret=api_secret,
+                secure=True
+            )
+        CLOUDINARY_CONFIGURED = True
+except Exception as e:
+    print(f"Cloudinary setup notice: {e}")
+    CLOUDINARY_CONFIGURED = False
+
+# ==================== DATABASE CONFIG ====================
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+IS_POSTGRES = bool(DATABASE_URL)
+
+if IS_POSTGRES:
+    import psycopg2
+    import psycopg2.extras
+else:
+    import sqlite3
+    app.config['DATABASE'] = os.path.join(BASE_DIR, 'waste_exchange.db')
+
+
+class DBWrapper:
+    """Unified wrapper around SQLite / PostgreSQL connections"""
+    def __init__(self):
+        if IS_POSTGRES:
+            self.conn = psycopg2.connect(DATABASE_URL)
+            self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        else:
+            self.conn = sqlite3.connect(app.config['DATABASE'])
+            self.conn.row_factory = sqlite3.Row
+            self.cursor = self.conn.cursor()
+
+    def execute(self, sql, params=None):
+        if params is None:
+            params = ()
+        if IS_POSTGRES:
+            # Convert ? to %s for PostgreSQL
+            sql_pg = sql.replace('?', '%s')
+            self.cursor.execute(sql_pg, params)
+        else:
+            self.cursor.execute(sql, params)
+        return self
+
+    def fetchone(self):
+        return self.cursor.fetchone()
+
+    def fetchall(self):
+        return self.cursor.fetchall()
+
+    def commit(self):
+        self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
+
+    def close(self):
+        try:
+            self.cursor.close()
+        except Exception:
+            pass
+        try:
+            self.conn.close()
+        except Exception:
+            pass
+
+    @property
+    def lastrowid(self):
+        if IS_POSTGRES:
+            return None
+        return self.cursor.lastrowid
+
+
+def get_db():
+    return DBWrapper()
+
+
+# ==================== JINJA TEMPLATE FILTER ====================
+@app.template_filter('img_url')
+def img_url_filter(filename_or_url):
+    """Returns correct image URL whether it is a Cloudinary full URL or local file"""
+    if not filename_or_url:
+        return ''
+    if filename_or_url.startswith('http://') or filename_or_url.startswith('https://'):
+        return filename_or_url
+    return url_for('static', filename='uploads/materials/' + filename_or_url)
 
 
 def allowed_file(filename):
@@ -38,24 +140,19 @@ def compress_image(image_file, max_width=1200, max_height=1200):
     return output
 
 
-# ==================== DATABASE FUNCTIONS ====================
-
-def get_db():
-    """Get database connection"""
-    db = sqlite3.connect(app.config['DATABASE'])
-    db.row_factory = sqlite3.Row
-    return db
-
+# ==================== DATABASE SCHEMA & MIGRATIONS ====================
 
 def init_db():
     """Initialize database with tables"""
     db = get_db()
-    cursor = db.cursor()
+
+    pk_type = "SERIAL PRIMARY KEY" if IS_POSTGRES else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    ts_default = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
 
     # Users table
-    cursor.execute('''
+    db.execute(f'''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk_type},
             username TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
@@ -66,14 +163,14 @@ def init_db():
             total_ratings INTEGER DEFAULT 0,
             avg_rating REAL DEFAULT 0.0,
             is_admin INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at {ts_default}
         )
     ''')
 
     # Waste materials table
-    cursor.execute('''
+    db.execute(f'''
         CREATE TABLE IF NOT EXISTS waste_materials (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk_type},
             name TEXT NOT NULL,
             category TEXT DEFAULT 'Other',
             description TEXT,
@@ -82,48 +179,49 @@ def init_db():
             unit TEXT DEFAULT 'kg',
             user_id INTEGER NOT NULL,
             company_name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at {ts_default},
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
     ''')
 
     # Orders table
-    cursor.execute('''
+    db.execute(f'''
         CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk_type},
             buyer_id INTEGER NOT NULL,
             material_id INTEGER NOT NULL,
             quantity INTEGER NOT NULL,
             total_price REAL NOT NULL,
             status TEXT DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at {ts_default},
             FOREIGN KEY (buyer_id) REFERENCES users(id),
             FOREIGN KEY (material_id) REFERENCES waste_materials(id)
         )
     ''')
 
     # Material Images table
-    cursor.execute('''
+    db.execute(f'''
         CREATE TABLE IF NOT EXISTS material_images (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk_type},
             material_id INTEGER NOT NULL,
             image_filename TEXT NOT NULL,
+            cloudinary_public_id TEXT,
             is_primary INTEGER DEFAULT 0,
-            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            uploaded_at {ts_default},
             FOREIGN KEY (material_id) REFERENCES waste_materials(id)
         )
     ''')
 
     # Reviews table
-    cursor.execute('''
+    db.execute(f'''
         CREATE TABLE IF NOT EXISTS reviews (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk_type},
             order_id INTEGER NOT NULL,
             reviewer_id INTEGER NOT NULL,
             seller_id INTEGER NOT NULL,
             rating INTEGER NOT NULL,
             review TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at {ts_default},
             FOREIGN KEY (order_id) REFERENCES orders(id),
             FOREIGN KEY (reviewer_id) REFERENCES users(id),
             FOREIGN KEY (seller_id) REFERENCES users(id)
@@ -137,52 +235,42 @@ def init_db():
 def run_migration():
     """Add any missing columns to existing database"""
     db = get_db()
-    cursor = db.cursor()
 
-    migrations = [
-        "ALTER TABLE users ADD COLUMN company_description TEXT",
-        "ALTER TABLE users ADD COLUMN location TEXT",
-        "ALTER TABLE users ADD COLUMN contact_phone TEXT",
-        "ALTER TABLE users ADD COLUMN total_ratings INTEGER DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN avg_rating REAL DEFAULT 0.0",
-        "ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0",
-        "ALTER TABLE waste_materials ADD COLUMN category TEXT DEFAULT 'Other'",
-    ]
+    if IS_POSTGRES:
+        migrations = [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS company_description TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS location TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS contact_phone TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS total_ratings INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_rating REAL DEFAULT 0.0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin INTEGER DEFAULT 0",
+            "ALTER TABLE waste_materials ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Other'",
+            "ALTER TABLE material_images ADD COLUMN IF NOT EXISTS cloudinary_public_id TEXT",
+        ]
+        for sql in migrations:
+            try:
+                db.execute(sql)
+                db.commit()
+            except Exception:
+                db.rollback()
+    else:
+        migrations = [
+            "ALTER TABLE users ADD COLUMN company_description TEXT",
+            "ALTER TABLE users ADD COLUMN location TEXT",
+            "ALTER TABLE users ADD COLUMN contact_phone TEXT",
+            "ALTER TABLE users ADD COLUMN total_ratings INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN avg_rating REAL DEFAULT 0.0",
+            "ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0",
+            "ALTER TABLE waste_materials ADD COLUMN category TEXT DEFAULT 'Other'",
+            "ALTER TABLE material_images ADD COLUMN cloudinary_public_id TEXT",
+        ]
+        for sql in migrations:
+            try:
+                db.execute(sql)
+                db.commit()
+            except Exception:
+                pass
 
-    for sql in migrations:
-        try:
-            cursor.execute(sql)
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-
-    # Create new tables if missing
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS material_images (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            material_id INTEGER NOT NULL,
-            image_filename TEXT NOT NULL,
-            is_primary INTEGER DEFAULT 0,
-            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (material_id) REFERENCES waste_materials(id)
-        )
-    ''')
-
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS reviews (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            order_id INTEGER NOT NULL,
-            reviewer_id INTEGER NOT NULL,
-            seller_id INTEGER NOT NULL,
-            rating INTEGER NOT NULL,
-            review TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (order_id) REFERENCES orders(id),
-            FOREIGN KEY (reviewer_id) REFERENCES users(id),
-            FOREIGN KEY (seller_id) REFERENCES users(id)
-        )
-    ''')
-
-    db.commit()
     db.close()
 
 
@@ -242,7 +330,8 @@ def search():
     min_qty = request.args.get('min_qty', '').strip()
     sort = request.args.get('sort', 'newest').strip()
 
-    sql = '''
+    like_op = "ILIKE" if IS_POSTGRES else "LIKE"
+    sql = f'''
         SELECT m.*, i.image_filename
         FROM waste_materials m
         LEFT JOIN material_images i ON m.id = i.material_id AND i.is_primary = 1
@@ -251,7 +340,7 @@ def search():
     params = []
 
     if query:
-        sql += ' AND (m.name LIKE ? OR m.description LIKE ?)'
+        sql += f' AND (m.name {like_op} ? OR m.description {like_op} ?)'
         params.extend(['%' + query + '%', '%' + query + '%'])
     if category:
         sql += ' AND m.category = ?'
@@ -326,7 +415,8 @@ def register():
                 db.close()
                 flash('Registration successful! Please login.', 'success')
                 return redirect(url_for('login'))
-            except sqlite3.IntegrityError:
+            except Exception:
+                db.rollback()
                 db.close()
                 error = 'Username or email already registered.'
 
@@ -431,33 +521,53 @@ def upload_material():
         if error is None:
             try:
                 db = get_db()
-                cursor = db.cursor()
-                cursor.execute(
-                    '''INSERT INTO waste_materials
-                       (name, category, description, price_per_unit, quantity, unit, user_id, company_name)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                    (name, category, description, float(price), int(quantity), unit,
-                     session['user_id'], session['company_name'])
-                )
-                material_id = cursor.lastrowid
+                if IS_POSTGRES:
+                    db.execute(
+                        '''INSERT INTO waste_materials
+                           (name, category, description, price_per_unit, quantity, unit, user_id, company_name)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id''',
+                        (name, category, description, float(price), int(quantity), unit,
+                         session['user_id'], session['company_name'])
+                    )
+                    material_id = db.fetchone()['id']
+                else:
+                    db.execute(
+                        '''INSERT INTO waste_materials
+                           (name, category, description, price_per_unit, quantity, unit, user_id, company_name)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                        (name, category, description, float(price), int(quantity), unit,
+                         session['user_id'], session['company_name'])
+                    )
+                    material_id = db.lastrowid
 
-                # Handle images
+                # Handle image uploads
                 images = request.files.getlist('images')
                 valid_images = [img for img in images if img and img.filename and allowed_file(img.filename)]
 
                 for i, file in enumerate(valid_images[:MAX_IMAGES_PER_MATERIAL]):
-                    timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
-                    filename = f"material_{material_id}_{timestamp}.jpg"
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'materials', filename)
+                    is_primary = 1 if i == 0 else 0
                     compressed = compress_image(file)
 
-                    with open(filepath, 'wb') as f:
-                        f.write(compressed.read())
+                    if CLOUDINARY_CONFIGURED:
+                        upload_res = cloudinary.uploader.upload(
+                            compressed,
+                            folder='waste_exchange/materials',
+                            resource_type='image'
+                        )
+                        image_filename = upload_res['secure_url']
+                        public_id = upload_res.get('public_id')
+                    else:
+                        timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
+                        local_fname = f"material_{material_id}_{timestamp}.jpg"
+                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'materials', local_fname)
+                        with open(filepath, 'wb') as f:
+                            f.write(compressed.read())
+                        image_filename = local_fname
+                        public_id = None
 
-                    is_primary = 1 if i == 0 else 0
-                    cursor.execute(
-                        'INSERT INTO material_images (material_id, image_filename, is_primary) VALUES (?, ?, ?)',
-                        (material_id, filename, is_primary)
+                    db.execute(
+                        'INSERT INTO material_images (material_id, image_filename, cloudinary_public_id, is_primary) VALUES (?, ?, ?, ?)',
+                        (material_id, image_filename, public_id, is_primary)
                     )
 
                 db.commit()
@@ -688,7 +798,6 @@ def rate_order(order_id):
         flash('Order not found or not eligible for rating', 'error')
         return redirect(url_for('my_orders'))
 
-    # Check if already rated
     existing_review = db.execute(
         'SELECT id FROM reviews WHERE order_id = ?', (order_id,)
     ).fetchone()
@@ -714,7 +823,6 @@ def rate_order(order_id):
                 (order_id, session['user_id'], seller_id, rating, review_text)
             )
 
-            # Update seller's avg rating
             avg = db.execute(
                 'SELECT AVG(rating) as avg, COUNT(*) as cnt FROM reviews WHERE seller_id = ?',
                 (seller_id,)
@@ -747,17 +855,24 @@ def delete_material(material_id):
         flash('Unauthorized action', 'error')
         return redirect(url_for('dashboard'))
 
-    # Delete associated images from disk
+    # Delete associated images
     images = db.execute(
-        'SELECT image_filename FROM material_images WHERE material_id = ?', (material_id,)
+        'SELECT image_filename, cloudinary_public_id FROM material_images WHERE material_id = ?', (material_id,)
     ).fetchall()
+
     for img in images:
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'materials', img['image_filename'])
-        if os.path.exists(filepath):
+        if img['cloudinary_public_id'] and CLOUDINARY_CONFIGURED:
             try:
-                os.remove(filepath)
-            except OSError:
+                cloudinary.uploader.destroy(img['cloudinary_public_id'])
+            except Exception:
                 pass
+        else:
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'materials', img['image_filename'])
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except OSError:
+                    pass
 
     db.execute('DELETE FROM material_images WHERE material_id = ?', (material_id,))
     db.execute('DELETE FROM waste_materials WHERE id = ?', (material_id,))
@@ -846,13 +961,20 @@ def admin_dashboard():
     """Admin dashboard"""
     db = get_db()
 
+    total_users_row = db.execute('SELECT COUNT(*) as cnt FROM users').fetchone()
+    total_materials_row = db.execute('SELECT COUNT(*) as cnt FROM waste_materials').fetchone()
+    total_orders_row = db.execute('SELECT COUNT(*) as cnt FROM orders').fetchone()
+    pending_orders_row = db.execute("SELECT COUNT(*) as cnt FROM orders WHERE status='pending'").fetchone()
+    completed_orders_row = db.execute("SELECT COUNT(*) as cnt FROM orders WHERE status='completed'").fetchone()
+    total_value_row = db.execute('SELECT COALESCE(SUM(total_price), 0) as total FROM orders').fetchone()
+
     stats = {
-        'total_users': db.execute('SELECT COUNT(*) FROM users').fetchone()[0],
-        'total_materials': db.execute('SELECT COUNT(*) FROM waste_materials').fetchone()[0],
-        'total_orders': db.execute('SELECT COUNT(*) FROM orders').fetchone()[0],
-        'pending_orders': db.execute("SELECT COUNT(*) FROM orders WHERE status='pending'").fetchone()[0],
-        'completed_orders': db.execute("SELECT COUNT(*) FROM orders WHERE status='completed'").fetchone()[0],
-        'total_value': db.execute('SELECT COALESCE(SUM(total_price), 0) FROM orders').fetchone()[0],
+        'total_users': total_users_row['cnt'] if total_users_row else 0,
+        'total_materials': total_materials_row['cnt'] if total_materials_row else 0,
+        'total_orders': total_orders_row['cnt'] if total_orders_row else 0,
+        'pending_orders': pending_orders_row['cnt'] if pending_orders_row else 0,
+        'completed_orders': completed_orders_row['cnt'] if completed_orders_row else 0,
+        'total_value': total_value_row['total'] if total_value_row else 0,
     }
 
     top_sellers = db.execute(
@@ -861,7 +983,7 @@ def admin_dashboard():
            FROM users u
            LEFT JOIN waste_materials m ON m.user_id = u.id
            LEFT JOIN orders o ON o.material_id = m.id AND o.status = 'completed'
-           GROUP BY u.id
+           GROUP BY u.id, u.company_name, u.avg_rating
            ORDER BY order_count DESC LIMIT 10'''
     ).fetchall()
 
@@ -891,11 +1013,11 @@ def server_error(error):
 
 
 # ==================== DATABASE INITIALIZATION ====================
-# This runs on import (works with both `python app.py` and `gunicorn app:app`)
-if os.path.exists(app.config['DATABASE']):
-    run_migration()
-else:
+try:
     init_db()
+    run_migration()
+except Exception as e:
+    print(f"DB init warning: {e}")
 
 
 if __name__ == '__main__':

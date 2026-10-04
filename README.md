@@ -224,6 +224,25 @@ http://localhost:5000
 - User ownership verification for protected actions
 - SQL injection prevention using parameterized queries
 
+## Cloud & Production Deployment (Render + PostgreSQL + Cloudinary)
+
+This platform supports **persistent PostgreSQL storage** on Render and **Cloudinary** cloud image hosting so your users, passwords, and images are permanently saved across restarts and redeploys.
+
+### 1. Render Deployment
+- Render automatically provisions the PostgreSQL database specified in `render.yaml`.
+- The `DATABASE_URL` environment variable is linked automatically.
+
+### 2. Free Cloudinary Setup for Photos
+1. Create a free account at [cloudinary.com](https://cloudinary.com).
+2. Go to your Cloudinary Dashboard and copy your **Cloud Name**, **API Key**, and **API Secret** (or **API Environment variable URL** `CLOUDINARY_URL`).
+3. In your Render Dashboard (under **Environment Variables** for your web service), add:
+   - `CLOUDINARY_CLOUD_NAME` = your_cloud_name
+   - `CLOUDINARY_API_KEY` = your_api_key
+   - `CLOUDINARY_API_SECRET` = your_api_secret
+   *(or simply add `CLOUDINARY_URL = cloudinary://<api_key>:<api_secret>@<cloud_name>`)*
+
+When running locally without credentials, the platform seamlessly falls back to SQLite and local image storage!
+
 ## Configuration
 
 You can modify the following in `app.py`:
@@ -231,9 +250,6 @@ You can modify the following in `app.py`:
 ```python
 # Change the secret key (IMPORTANT for production)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this'
-
-# Database file location
-app.config['DATABASE'] = 'waste_exchange.db'
 
 # Port and debug mode
 app.run(debug=True, port=5000)

@@ -33,7 +33,7 @@
                     <tr>
                         <td>
                             {% if material.image_filename %}
-                                <img src="{{ url_for('static', filename='uploads/materials/' + material.image_filename) }}" alt="{{ material.name }}" style="width: 70px; height: 70px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--slate-200);">
+                                <img src="{{ material.image_filename | img_url }}" alt="{{ material.name }}" style="width: 70px; height: 70px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--slate-200);">
                             {% else %}
                                 <div style="width: 70px; height: 70px; background-color: var(--slate-100); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.75rem; border: 1px solid var(--slate-200);">
                                     📦
