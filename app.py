@@ -228,6 +228,19 @@ def init_db():
         )
     ''')
 
+    # Seed default user if empty
+    try:
+        user_count = db.execute('SELECT COUNT(*) as cnt FROM users').fetchone()
+        cnt = user_count['cnt'] if user_count else 0
+        if cnt == 0:
+            default_pw = generate_password_hash('admin123')
+            db.execute(
+                'INSERT INTO users (username, email, password_hash, company_name, is_admin) VALUES (?, ?, ?, ?, ?)',
+                ('admin', 'admin@wasteexchange.com', default_pw, 'King pvt ltd', 1)
+            )
+    except Exception as e:
+        print(f"User seed notice: {e}")
+
     db.commit()
     db.close()
 
@@ -434,11 +447,14 @@ def login():
 
         db = get_db()
         error = None
-        user = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+        user = db.execute(
+            'SELECT * FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)',
+            (username, username)
+        ).fetchone()
         db.close()
 
         if user is None:
-            error = 'Username not found.'
+            error = 'Account not found on this server. If this is a new deployment, please Register first.'
         elif not check_password_hash(user['password_hash'], password):
             error = 'Invalid password.'
 
@@ -540,6 +556,10 @@ def upload_material():
                     )
                     material_id = db.lastrowid
 
+                # Ensure upload directory exists
+                uploads_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'materials')
+                os.makedirs(uploads_dir, exist_ok=True)
+
                 # Handle image uploads
                 images = request.files.getlist('images')
                 valid_images = [img for img in images if img and img.filename and allowed_file(img.filename)]
@@ -547,21 +567,29 @@ def upload_material():
                 for i, file in enumerate(valid_images[:MAX_IMAGES_PER_MATERIAL]):
                     is_primary = 1 if i == 0 else 0
                     compressed = compress_image(file)
+                    compressed_bytes = compressed.getvalue()
+                    image_filename = None
+                    public_id = None
 
                     if CLOUDINARY_CONFIGURED:
-                        upload_res = cloudinary.uploader.upload(
-                            compressed,
-                            folder='waste_exchange/materials',
-                            resource_type='image'
-                        )
-                        image_filename = upload_res['secure_url']
-                        public_id = upload_res.get('public_id')
-                    else:
+                        try:
+                            upload_res = cloudinary.uploader.upload(
+                                compressed_bytes,
+                                folder='waste_exchange/materials',
+                                resource_type='image'
+                            )
+                            image_filename = upload_res.get('secure_url')
+                            public_id = upload_res.get('public_id')
+                        except Exception as cloud_err:
+                            print(f"Cloudinary upload error (falling back to local): {cloud_err}")
+
+                    # Fallback to local file if Cloudinary was not used or failed
+                    if not image_filename:
                         timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
                         local_fname = f"material_{material_id}_{timestamp}.jpg"
-                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'materials', local_fname)
+                        filepath = os.path.join(uploads_dir, local_fname)
                         with open(filepath, 'wb') as f:
-                            f.write(compressed.read())
+                            f.write(compressed_bytes)
                         image_filename = local_fname
                         public_id = None
 
@@ -572,7 +600,7 @@ def upload_material():
 
                 db.commit()
                 db.close()
-                flash('Material uploaded successfully!', 'success')
+                flash('Material listed successfully!', 'success')
                 return redirect(url_for('my_materials'))
             except Exception as e:
                 flash(f'Error uploading material: {str(e)}', 'error')
